@@ -3,7 +3,7 @@
 #include "ChooseNextWaypoint.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
-#include "PatrollingGuard.h"
+#include "PatrolComponent.h"
 
 
 EBTNodeResult::Type UChooseNextWaypoint::ExecuteTask(UBehaviorTreeComponent & OwnerComp, uint8 * NodeMemory)
@@ -11,15 +11,19 @@ EBTNodeResult::Type UChooseNextWaypoint::ExecuteTask(UBehaviorTreeComponent & Ow
 
 
 	// Get the controlled pawn to get his waypoints
-	auto AIController = OwnerComp.GetAIOwner();
-	auto ControlledPawn = AIController->GetPawn();
-	auto PatrollingGuard = Cast<APatrollingGuard>(ControlledPawn);
+	auto ControlledPawn = OwnerComp.GetAIOwner()->GetPawn();
+	auto PatrolComp = ControlledPawn->FindComponentByClass<UPatrolComponent>();
 
-	auto PatrolPoints = PatrollingGuard->PatrolPoints;
+	if (!PatrolComp) { return EBTNodeResult::Failed; }
+	auto PatrolPoints = PatrolComp->GetPatrolPoints();
 
-	if (PatrolPoints.Num() == 0) { return EBTNodeResult::Failed; }
-	// set next waypoint
+	if (PatrolPoints.Num() == 0) 
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No patrol points on guard %s"), *ControlledPawn->GetName());
+		return EBTNodeResult::Aborted; 
+	}
 	
+	// set next waypoint
 	auto BlackboardComp = OwnerComp.GetBlackboardComponent();
 	auto Index = BlackboardComp->GetValueAsInt(IndexKey.SelectedKeyName);
 	BlackboardComp->SetValueAsObject(WaypointKey.SelectedKeyName, PatrolPoints[Index]);
@@ -28,7 +32,6 @@ EBTNodeResult::Type UChooseNextWaypoint::ExecuteTask(UBehaviorTreeComponent & Ow
 	//Cycle index
 	auto NextIndex = (Index + 1) % PatrolPoints.Num();
 	BlackboardComp->SetValueAsInt(IndexKey.SelectedKeyName, NextIndex);
-
 
 	return EBTNodeResult::Succeeded;
 }

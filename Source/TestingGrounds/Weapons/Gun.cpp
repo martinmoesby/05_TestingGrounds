@@ -71,8 +71,10 @@ void AGun::OnFire()
 	// try and play a firing animation if specified
 	if (FireAnimation != NULL)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("Found FireAnimation : %s"), *FireAnimation->GetName());
 		if (AnimInstance != NULL)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("Found AnimationInstance : %s"), *AnimInstance->GetName());
 			AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
